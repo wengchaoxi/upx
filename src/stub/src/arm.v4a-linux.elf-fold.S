@@ -86,9 +86,43 @@ unmap_all_pages= (1<<1)
 
 mflg_data: .int MAP_PRIVATE|MAP_ANONYMOUS  @ overwritten for QNX vs Linux
 PAGE_MASK: .int ~0<<12  // default
+fold_begin:  // enter here; known offset 8 (2*NBPW)
+        b L05
+
 get_page_mask: .globl get_page_mask
         ldr r0,PAGE_MASK
         ret
+
+// Sometimes Linux enforces page-aligned address
+Pprotect: .globl Pprotect
+mprotect: .globl mprotect
+        ldr r12,PAGE_MASK
+        bic r12,r0,r12  // lo frag
+        sub r0,r0,r12  // page align lo end
+        add r1,r1,r12
+        do_sys __NR_mprotect; ret
+
+        .globl mmap
+mmap:
+        stmdb sp!,{r4,r5,lr}
+        ldr r5,[sp,#4*4]
+        ldr r4,[sp,#3*4]
+        mov r5,r5,lsr #12  @ convert to page number
+mmap_do:
+        ldr r12,PAGE_MASK
+        bic r12,r0,r12  // lo frag
+        sub r0,r0,r12  // page align lo end
+        add r1,r1,r12
+        do_sys __NR_mmap2
+        ldmia sp!,{r4,r5,pc}
+
+mmap_privanon: .globl mmap_privanon
+        stmdb sp!,{r4,r5,lr}
+        ldr r4,mflg_data  @ Map_PRIVATE|MAP_ANON for Linux; MAP_PRIVANON for QNX
+        mov r5,#0  @ offset= 0
+        orr r3,r3,r4  @ combine with input (such as MAP_FIXED)
+        mvn r4,#0  @ fd= -1
+        b mmap_do
 
 SP_fd= 3*4
 /* In:
@@ -99,7 +133,7 @@ new sp/            elfaddr,%fd, ADRU,LENU, f_exp,%entry, r0,r1, argc,argv,0,envp
         (ADRX,LENX) = extent of compressed program
         (ADRU,LENU) = params to munmap unfolded stub
 */
-fold_begin:  // enter here
+L05:
         str r3,[sp,#F_fd]
 #if DEBUG  //{
 #define TRACE_REGS r0-r12,r14,r15
@@ -459,35 +493,6 @@ readlink:
 munmap:
         do_sys __NR_munmap; ret
 
-// Sometimes Linux enforces page-aligned address
-Pprotect: .globl Pprotect
-mprotect: .globl mprotect
-        ldr r12,m_off4k
-        and r12,r12,r0  // lo frag
-        sub r0,r0,r12  // page align lo end
-        add r1,r1,r12
-        do_sys __NR_mprotect; ret
-
-        .globl mmap
-mmap:
-        stmdb sp!,{r4,r5,lr}
-        ldr r5,[sp,#4*4]
-        ldr r4,[sp,#3*4]
-        mov r5,r5,lsr #12  @ convert to page number
-mmap_do:
-        ldr r12,m_off4k
-        and r12,r12,r0  // lo frag
-        sub r0,r0,r12  // page align lo end
-        add r1,r1,r12
-        do_sys __NR_mmap2
-        ldmia sp!,{r4,r5,pc}
-
-m_off4k:
-        .word -1+ (1<<PAGE_SHIFT)  // offset mask for 4KiB
-
-        do_sys __NR_mmap2
-        ldmia sp!,{r4,r5,pc}
-
         .globl __clear_cache
 __clear_cache:
         mov r2,#0
@@ -504,14 +509,6 @@ get_sys_munmap: .globl get_sys_munmap  // r0= system call instruction
         mov r0,#0
 #endif  /*}*/
         ret
-
-mmap_privanon: .globl mmap_privanon
-        stmdb sp!,{r4,r5,lr}
-        ldr r4,mflg_data  @ Map_PRIVATE|MAP_ANON for Linux; MAP_PRIVANON for QNX
-        mov r5,#0  @ offset= 0
-        orr r3,r3,r4  @ combine with input (such as MAP_FIXED)
-        mvn r4,#0  @ fd= -1
-        b mmap_do
 
 #if 1|DEBUG  /*{*/
 

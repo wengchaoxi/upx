@@ -9,7 +9,7 @@ Linker script and memory map
 TARGET(elf32-powerpc)
                 0x0000000000100080                . = ((0x100000 + SIZEOF_HEADERS) + 0xc)
 
-.text           0x0000000000100080     0x1164
+.text           0x0000000000100080     0x1284
  *(.text)
  .text          0x0000000000100080      0x318 tmp/powerpc-linux.elf-fold.o
                 0x000000000010008c                get_page_mask
@@ -25,19 +25,19 @@ TARGET(elf32-powerpc)
                 0x0000000000100378                open
                 0x00000000001000a4                mprotect
                 0x0000000000100380                close
- .text          0x0000000000100398      0xe4c tmp/powerpc-linux.elf-main.o
-                0x0000000000100fe4                upx_main
+ .text          0x0000000000100398      0xf6c tmp/powerpc-linux.elf-main.o
+                0x0000000000101104                upx_main
  *(.data)
- .data          0x00000000001011e4        0x0 tmp/powerpc-linux.elf-fold.o
- .data          0x00000000001011e4        0x0 tmp/powerpc-linux.elf-main.o
+ .data          0x0000000000101304        0x0 tmp/powerpc-linux.elf-fold.o
+ .data          0x0000000000101304        0x0 tmp/powerpc-linux.elf-main.o
 
 .data
 
-.bss            0x00000000001011e4        0x0
- .bss           0x00000000001011e4        0x0 tmp/powerpc-linux.elf-fold.o
- .bss           0x00000000001011e4        0x0 tmp/powerpc-linux.elf-main.o
+.bss            0x0000000000101304        0x0
+ .bss           0x0000000000101304        0x0 tmp/powerpc-linux.elf-fold.o
+ .bss           0x0000000000101304        0x0 tmp/powerpc-linux.elf-main.o
 
-.rela.dyn       0x00000000001011e4        0x0
+.rela.dyn       0x0000000000101304        0x0
  .rela.text     0x0000000000000000        0x0 tmp/powerpc-linux.elf-fold.o
 LOAD tmp/powerpc-linux.elf-fold.o
 LOAD tmp/powerpc-linux.elf-main.o

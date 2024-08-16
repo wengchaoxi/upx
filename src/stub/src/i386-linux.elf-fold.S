@@ -286,6 +286,10 @@ mmap: .globl mmap  // what happened to the ebx->args_on_stack method?
         pop ebp
         ret
 
+my_bkpt: .globl my_bkpt
+        int3
+        ret
+
 .balign 4,0
 
 /* vim:set ts=8 sw=8 et: */

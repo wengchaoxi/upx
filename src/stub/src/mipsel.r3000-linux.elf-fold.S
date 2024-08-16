@@ -312,4 +312,8 @@ mmap: .globl mmap
           addiu sp,sp,sp_frame
 #endif  /*}*/
 
+my_bkpt: .globl my_bkpt
+        break
+        jr ra
+          nop
 /* vim:set ts=8 sw=8 et: */

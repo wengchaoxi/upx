@@ -261,7 +261,16 @@ xread(Extent *x, char *buf, size_t count)
 #else  //}{  save debugging time
 #define ERR_LAB /*empty*/
 
-extern void my_bkpt(int, ...);
+#ifndef __mips__  //{
+extern void my_bkpt(void const *p, ...);
+#else  //}{
+static void
+my_bkpt(void const *p, ...)
+{
+    asm("break");
+}
+#endif  //}
+
 
 static void __attribute__ ((__noreturn__))
 err_exit(int a)
@@ -269,7 +278,7 @@ err_exit(int a)
     DPRINTF("err_exit %%x\\n", a);
     (void)a;  // debugging convenience
 #if defined(__powerpc__)  //{
-    my_bkpt(a);
+    my_bkpt((void const *)a);
 #endif  //}
     exit(127);
 }
@@ -536,7 +545,7 @@ __attribute__((regparm(2), stdcall))
 upx_bzero(char *p, size_t len)
 {
     if (len) do {
-        *p++= 0;
+        *p++ = 0;
     } while (--len);
 }
 #define bzero upx_bzero
@@ -603,6 +612,11 @@ size_t get_page_mask(void);  // variable page size AT_PAGESZ; see *-fold.S
 size_t get_page_mask(void) { return PAGE_MASK; }  // compile-time constant
 #endif  //}
 
+//static unsigned umin(unsigned a, unsigned b)
+//{
+//    return (a <= b) ? a : b;
+//}
+
 // Find convex hull of PT_LOAD (the minimal interval which covers all PT_LOAD),
 // and mmap that much, to be sure that a kernel using exec-shield-randomize
 // won't place the first piece in a way that leaves no room for the rest.
@@ -620,8 +634,8 @@ xfind_pages(unsigned mflags, Elf32_Phdr const *phdr, int phnum,
 #if !defined(__mips__)  //{
     size_t const page_mask = get_page_mask();
 #endif  //}
-    Elf32_Addr lo= ~0, hi= 0, addr = 0;
-    DPRINTF("xfind_pages  %%x  %%p  %%d  %%p\\n", mflags, phdr, phnum, p_brk);
+    Elf32_Addr lo= ~0, hi= 0, addr = 0, p_align = 0x1000;
+    DPRINTF("xfind_pages  %%x  %%p  %%d  %%p  %%p\\n", mflags, phdr, phnum, p_brk, page_mask);
     for (; --phnum>=0; ++phdr) if (PT_LOAD==phdr->p_type
 #if defined(__arm__)  /*{*/
                                &&  phdr->p_memsz
@@ -635,23 +649,48 @@ xfind_pages(unsigned mflags, Elf32_Phdr const *phdr, int phnum,
 // LOAD 0x001000 0xb0001000 0xb0001000 0x07614 0x07614 R E 0x1000
 // LOAD 0x009000 0xb0009000 0xb0009000 0x006f8 0x0ccdc RW  0x1000
 #endif  /*}*/
-                                                ) {
+    ) {
         if (phdr->p_vaddr < lo) {
             lo = phdr->p_vaddr;
         }
         if (hi < (phdr->p_memsz + phdr->p_vaddr)) {
             hi =  phdr->p_memsz + phdr->p_vaddr;
         }
+        if (p_align < phdr->p_align) {
+            p_align = phdr->p_align;
+        }
+    } // end scan of PT_LOADs
+    size_t page_size = 0u - page_mask;
+    lo &= page_mask;  // round down to page boundary
+    size_t len1 = page_mask & (hi - lo + page_size -1);  // desired length
+
+    // Linux lacks mmap_aligned(), so allocate a larger space, then trim the ends.
+    // Avoid division (p_align / page_size); both are powers of 2
+    unsigned q = 1;
+    while ((q * page_size) < p_align) q <<= 1;
+    --q;  // number of extra pages
+    unsigned len2 = len1 + (q * page_size);  // get enough space to align
+    addr = (Elf32_Addr)mmap_privanon((void *)lo, len2, PROT_NONE, mflags);
+    DPRINTF("  addr=%%p  lo=%%p  hi=%%p align=%%p  q=%%p  len1=%%p  len2=%%p\\n",
+        addr, lo, hi, p_align, q, len1, len2, p_align);
+    if (q) {
+        size_t len3 = (-1 + p_align) & -addr;  // up to p_align boundary
+        if (len3) {
+            munmap((void *)addr, len3);  // trim the low end
+            addr += len3;
+            len2 -= len3;
+        }
+        if (len2 -= len1) {
+            munmap((void *)(addr + len1), len2); // trim the high end
+        }
     }
-    lo -= ~page_mask & lo;  // round down to page boundary
-    hi  =  page_mask & (hi - lo - page_mask -1);  // page length
-    DPRINTF("  addr=%%p  lo=%%p  hi=%%p\\n", addr, lo, hi);
-    addr = (Elf32_Addr)mmap_privanon((void *)lo, hi, PROT_NONE, mflags);
     DPRINTF("  addr=%%p\\n", addr);
-    *p_brk = hi + addr;  // the logical value of brk(0)
+    *p_brk = len1 + addr;  // the logical value of brk(0)
     return (ptrdiff_t)addr - lo;
 }
 
+
+extern void my_bkpt(void const *, ...);
 
 static Elf32_Addr  // entry address
 do_xmap(int const fdi, Elf32_Ehdr const *const ehdr, Extent *const xi,
@@ -686,6 +725,7 @@ do_xmap(int const fdi, Elf32_Ehdr const *const ehdr, Extent *const xi,
         v_brk = phdr0->p_memsz + ehdr0;
     }
     else { // PT_INTERP
+        DPRINTF("do_xmap PT_INTERP phdr=%%p  phnum=%%p\\n", phdr, ehdr->e_phnum);
         reloc = xfind_pages(
             ((ET_DYN!=ehdr->e_type) ? MAP_FIXED : 0), phdr, ehdr->e_phnum, &v_brk
 #if defined(__mips__)  //{
@@ -731,7 +771,7 @@ do_xmap(int const fdi, Elf32_Ehdr const *const ehdr, Extent *const xi,
 #  define LEN_OVER 0
 #endif  /*}*/
 
-        DPRINTF("    prot=%%x\n",
+        DPRINTF("    prot=%%x\\n",
 #if defined(__arm__)  //{
                     ((PF_X & phdr->p_flags) ? PROT_EXEC : 0) |
 #endif  //}
@@ -760,7 +800,12 @@ do_xmap(int const fdi, Elf32_Ehdr const *const ehdr, Extent *const xi,
         //}
         frag = (-mlen) & frag_mask;  // distance to next page boundary
         if (PROT_WRITE & prot) { // note: read-only .bss not supported here
-            bzero(mlen+addr, frag);  // fragment at hi end
+            // rtld (ld-linux) believes that [&_end, next_page] is zeroed!
+            // glibc-2.35/elf/dl-minimal-malloc.c:
+            /* Consume any unused space in the last page of our data segment.  */
+            if (frag) {
+                bzero(mlen+addr, frag);  // fragment at hi end
+            }
         }
         if (xi) {
 #if defined(__i386__)  /*{*/
@@ -838,7 +883,7 @@ static uint32_t ascii5(char *p, uint32_t v, unsigned n)
 // This function is optimized for size.
 **************************************************************************/
 
-#if defined(__mips__)  /*{*/
+#if defined(__mips__) //{
 void *upx_main(  // returns entry address
     struct b_info const *const bi,  // 1st block header
     size_t const sz_compressed,  // total length

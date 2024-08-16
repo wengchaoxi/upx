@@ -173,9 +173,9 @@ unfold:  // in: r3= mflg; r6= elfaddr; lr= &O_BINFO
 
 // pass run-time constants into unfolded code
         ldr r1,[sp,#F_mflg]  @ mflg
-        str r1,[r10],#NBPW  @ pass mflg to folded code
+        str r1,[r10,#0]  @ pass mflg to folded code
         ldr r1,[sp,#F_szpage]
-        str r1,[r10],#NBPW
+        str r1,[r10,#4]
 
 // PROT_EXEC
         mov r2,#PROT_EXEC|PROT_READ
