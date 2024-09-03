@@ -31,6 +31,8 @@
 
 #include "arch/amd64/macros.S"
 #include "arch/amd64/regs.h"
+NBPW= 8
+AT_PAGESZ= 6
 
 sz_Ehdr= 64
 e_phnum= 56
@@ -77,7 +79,24 @@ _start: .globl _start
 ////    nop; int3  # uncomment for debugging
         push %rax  // space for entry address
         push %rdx  // register this function pointer with 'atexit'
-        call main  // push &decompress
+
+        lea 3*NBPW(%rsp),%rdi  // skip atexit,%entry,argc
+        xor %eax,%eax  // 0
+0:      scasq; jne 0b  // in: %rdi= &argv;  out: %rdi= &envp
+0:      scasq; jne 0b  // in: %rdi= &envp;  out: %rdi= &auxv
+
+// find actual page size in Auxv
+        push %rdi; mov $0x1000,%edx  // default PAGE_SIZE
+        pop %rsi
+1:
+        lodsq; test %eax,%eax; je 2f
+        cmp $AT_PAGESZ,%eax; lodsq; jne 1b
+        xchg %eax,%edx
+2:
+        pop %rax; neg %rdx  // PAGE_MASK
+        pop %rcx; push %rdx
+        push %rax  // atexit,pmask,argc
+
 
 /* Returns 0 on success; non-zero on failure. */
 f_exp:  // shorter name
@@ -229,7 +248,8 @@ die:
 
   section ELFMAINZ
 // Decompress the rest of this loader, and jump to it.
-unfold:  // IN: rbp= &f_exp; rsp/ &O_BINFO,%entry
+unfold:  // IN: rsp/ atexit,pmask,argc
+        lea 
         pop %rsi  // &(O_BINFO | is_ptinterp | unmap_all_pages)
         lodsl; and $~(is_ptinterp|unmap_all_pages),%eax; movl %eax,%r14d  // O_BINFO
         push %rsi; pop %rbx  // &b_info of folded decompressor
@@ -264,7 +284,7 @@ unfold:  // IN: rbp= &f_exp; rsp/ &O_BINFO,%entry
         lodsl; xchg %eax,%arg5l  // .b_method
         movq %rsi,%arg1  // src
         pop %arg2  // P_14  srclen
-        call *%rbp  // f_exp
+        call f_exp
         pop %rcx  // P_13  toss .sz_unc
 
 // PROT_EXEC
@@ -278,9 +298,12 @@ unfold:  // IN: rbp= &f_exp; rsp/ &O_BINFO,%entry
 // rsp/ elfaddr,fd,ADRU,LENU,%entry
         jmp *%r13
 
-main:
-        pop %rbp  // &f_exp
+zfind:
+        scasq; jne zfind
+        ret
+
         call unfold
+L_OBINFO:
         .long O_BINFO  // offset of b_info for .text | is_ptinerp | unmap_all_pages
         // { b_info={sz_unc, sz_cpr, {4 char}}, folded_loader...}
 

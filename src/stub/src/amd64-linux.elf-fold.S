@@ -70,8 +70,17 @@ __NR_readlink= 89
 // %rbx= 4+ &O_BINFO; %rbp= f_exp; %r14= ADRX; %r15= LENX;
 // rsp/ elfaddr,%fd,ADRU,LENU,rdx,%entry,  argc,argv,0,envp,0,auxv,0,strings
 
+page_mask: .long -0x1000
+
 fold_begin:
 ////    int3  // DEBUG only
+        jmp L05
+
+get_page_mask: .globl get_page_mask
+        mov $-0x1000,%rax
+        ret
+
+L05:
         call L90
         .asciz "/proc/self/exe"; .byte 0  // 16 bytes in all
 #include "arch/amd64/bxx.S"
