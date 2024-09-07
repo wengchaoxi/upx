@@ -52,6 +52,7 @@ PROT_READ=  1
 PROT_WRITE= 2
 PROT_EXEC=  4
 
+MAP_SHARED=  1
 MAP_PRIVATE= 2
 MAP_FIXED=     0x10
 MAP_ANONYMOUS= 0x20
@@ -77,12 +78,13 @@ unmap_all_pages= (1<<1)
 sz_pack2= .-4
 _start: .globl _start
 ////    nop; int3  # uncomment for debugging
+        pop %rcx  // argc
+        lea NBPW(%rsp,%rcx,NBPW),%rdi  // &environ
+        push %rcx  // argc
         push %rax  // space for entry address
         push %rdx  // register this function pointer with 'atexit'
 
-        lea 3*NBPW(%rsp),%rdi  // skip atexit,%entry,argc
         xor %eax,%eax  // 0
-0:      scasq; jne 0b  // in: %rdi= &argv;  out: %rdi= &envp
 0:      scasq; jne 0b  // in: %rdi= &envp;  out: %rdi= &auxv
 
 // find actual page size in Auxv
@@ -93,9 +95,10 @@ _start: .globl _start
         cmp $AT_PAGESZ,%eax; lodsq; jne 1b
         xchg %eax,%edx
 2:
-        pop %rax; neg %rdx  // PAGE_MASK
+        pop %rax; neg %rdx; mov %rdx,%r12  // PAGE_MASK
         pop %rcx; push %rdx
         push %rax  // atexit,pmask,argc
+        jmp unfold
 
 
 /* Returns 0 on success; non-zero on failure. */
@@ -221,7 +224,11 @@ eof:
         ret
 
 /* These from /usr/include/asm-x86_64/unistd.h */
+__NR_close= 3
 __NR_exit=     60
+__NR_ftruncate= 77  // 0x4d
+__NR_memfd_create= 319  // 0x13f
+        MFD_EXEC= 0x10
 __NR_mmap=      9
 __NR_mprotect= 10
 __NR_open=      2
@@ -237,25 +244,23 @@ L72:
         pop %arg2  // message text
 L75:
         push $FD_stderr; pop %arg1
-        push $ __NR_write; pop %rax
-        syscall
+        push $ __NR_write; pop %rax; syscall
 die:
         push $127; pop %arg1
-        push $ __NR_exit; pop %rax
-        syscall
+        push $ __NR_exit; pop %rax; syscall
 
         // IDENTSTR goes here
 
   section ELFMAINZ
 // Decompress the rest of this loader, and jump to it.
 unfold:  // IN: rsp/ atexit,pmask,argc
-        lea 
-        pop %rsi  // &(O_BINFO | is_ptinterp | unmap_all_pages)
+        lea f_exp(%rip),%rbp
+        lea L_OBINFO(%rip),%rsi  // &(O_BINFO | is_ptinterp | unmap_all_pages)
         lodsl; and $~(is_ptinterp|unmap_all_pages),%eax; movl %eax,%r14d  // O_BINFO
         push %rsi; pop %rbx  // &b_info of folded decompressor
         movl (%rsi),%edx  // .sz_unc
 
-        lea sz_pack2 - f_exp(%rbp),%rcx  // &sz_pack2
+        lea sz_pack2(%rip),%rcx  // &sz_pack2
         movl (%rcx),%r15d  // sz_pack2: length before stub
         subq %r15,%rcx  // elfaddr= &Elf64_Ehdr of this stub
         subl %r14d,%r15d  // LENX= sz_pack2 - O_BINFO
@@ -265,46 +270,55 @@ unfold:  // IN: rsp/ atexit,pmask,argc
         push $-1  // space for %fd
         push %rcx  // elfaddr
 
-// Reserve space for unfolded stub.
-        subq %arg6,%arg6  // 0 offset
-        orl $-1,%arg5l  // fd
-        push $MAP_PRIVATE|MAP_ANONYMOUS; pop %sys4
-        push %rdx; pop %arg2  // len
+        push $MFD_EXEC; pop %arg2
+        push $(0<<24)|('x'<<16)|('p'<<8)|('u'<<0)  // "upx" at (%rsp)
+        push %rsp; pop %arg1
+        mov $__NR_memfd_create,%eax; syscall
+        pop %rcx  // toss "upx"
+        mov %rax,NBPW(%rsp)  // mfd
+        mov %eax,%arg1l
+        mov 3*NBPW(%rsp),%arg2l  // LENU
+        push $__NR_ftruncate; pop %rax; syscall
+
+        xor %arg6l,%arg6l  // 0 offset
+        mov NBPW(%rsp),%arg5l  // mfd
+        push $MAP_SHARED|MAP_ANONYMOUS; pop %sys4
         push $PROT_READ|PROT_WRITE; pop %arg3
-        subl %arg1l,%arg1l  // 0; kernel chooses addr
+        //mov 3*NBPW(%rsp),%arg2l  // len
+        xor %arg1l,%arg1l  // 0; kernel chooses addr
         push $__NR_mmap; pop %rax; syscall
-        movq %rax,2*8(%rsp)  // ADRU
+        movq %rax,2*NBPW(%rsp)  // ADRU
 
 // Unfold
+        lea NBPW(%rax),%r13  // execute here
         push %rax; pop %arg3  // dst= new unfold
         push %rbx; pop %rsi
         lodsl; push %rax; movq %rsp,%arg4  // P_13  .sz_unc; &dstlen
-        movq %arg3,%r13  // execute here
         lodsl; push %rax  // P_14  tmp= .sz_cpr
         lodsl; xchg %eax,%arg5l  // .b_method
         movq %rsi,%arg1  // src
         pop %arg2  // P_14  srclen
         call f_exp
         pop %rcx  // P_13  toss .sz_unc
+        mov %r12,-NBPW(%r13)  // forward actual PMASK
 
 // PROT_EXEC
-        movq 3*8(%rsp),%arg2  // LENU
-        movq 2*8(%rsp),%arg1  // ADRU
-        push $PROT_READ|PROT_EXEC; pop %arg3
+        movq 3*NBPW(%rsp),%arg2  // LENU
+        movq 2*NBPW(%rsp),%arg1  // ADRU
+        push $PROT_WRITE|PROT_READ|PROT_EXEC; pop %arg3  // FIXME: PROT_WRITE for DEBUG only
         push $__NR_mprotect; pop %rax; syscall
+
+        mov NBPW(%rsp),%arg1l
+        push $__NR_close; pop %rax; syscall
 
 // Use the copy.
 // %r14= ADRX; %r15= LENX;
 // rsp/ elfaddr,fd,ADRU,LENU,%entry
         jmp *%r13
 
-zfind:
-        scasq; jne zfind
-        ret
-
-        call unfold
+        .balign 4
 L_OBINFO:
-        .long O_BINFO  // offset of b_info for .text | is_ptinerp | unmap_all_pages
+        .int O_BINFO  // offset of b_info for .text | is_ptinerp | unmap_all_pages
         // { b_info={sz_unc, sz_cpr, {4 char}}, folded_loader...}
 
 /*__XTHEENDX__*/

@@ -66,29 +66,32 @@ __NR_brk=      12
 __NR_exit= 60
 __NR_readlink= 89
 
+#define ENDBR64 .byte 0xf3,0x0f,0x1e,0xfa
+
 // IN: [ADRX,+LENX): compressed data; [ADRU,+LENU): expanded fold (w/ upx_main)
 // %rbx= 4+ &O_BINFO; %rbp= f_exp; %r14= ADRX; %r15= LENX;
 // rsp/ elfaddr,%fd,ADRU,LENU,rdx,%entry,  argc,argv,0,envp,0,auxv,0,strings
 
-page_mask: .long -0x1000
-
+page_mask: .quad -0x1000  // default; overwritten by actual
 fold_begin:
+        ENDBR64
 ////    int3  // DEBUG only
         jmp L05
 
 get_page_mask: .globl get_page_mask
-        mov $-0x1000,%rax
+        mov page_mask(%rip),%rax
         ret
 
-L05:
-        call L90
-        .asciz "/proc/self/exe"; .byte 0  // 16 bytes in all
+proc_self_exe:
+        .asciz "/proc/self/exe"
+f_unf: .globl f_unf
 #include "arch/amd64/bxx.S"
-L90:
-        pop %rdx  // "/proc/self/eax"
+
+L05:
+        lea proc_self_exe(%rip),%rdx
         push %r14  // ADRX
         push %r15  // LENX
-        lea 16(%rdx),%rax; push %rax  # &amdbxx: f_unf
+        lea f_unf - proc_self_exe(%rdx),%rax; push %rax  # &amdbxx: f_unf
 
 unmap_all_pages= (1<<1)
 is_ptinterp=     (1<<0)
