@@ -270,10 +270,15 @@ unfold:  // IN: rsp/ atexit,pmask,argc
         push $-1  // space for %fd
         push %rcx  // elfaddr
 
-        push $MFD_EXEC; pop %arg2
         push $(0<<24)|('x'<<16)|('p'<<8)|('u'<<0)  // "upx" at (%rsp)
         push %rsp; pop %arg1
+        push $MFD_EXEC; pop %arg2
+mfd_2nd:
         mov $__NR_memfd_create,%eax; syscall
+        test %eax,%eax; jns mfd_ok
+        test %arg2,%arg2; push $0; pop %arg2; jnz mfd_2nd // try with (, 0)
+        hlt  // memfd_create("upx", MFD_EXEC) and ("upx", 0) both fail
+mfd_ok:
         pop %rcx  // toss "upx"
         mov %rax,NBPW(%rsp)  // mfd
         mov %eax,%arg1l

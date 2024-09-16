@@ -368,7 +368,7 @@ static inline _syscall2(int,link,const char *,src, const char *,dst)
 #undef Z0
 #undef Z1
 
-#elif defined(__mips__)  /*}{*/
+#elif defined(__mips__)  /*}{ cannot link to extern, so must define here*/
 
 #undef  MAP_ANONYMOUS
 #define MAP_ANONYMOUS 0x800
@@ -541,7 +541,7 @@ static ssize_t write(int fd, void const *buf, size_t len)
 }
 #endif  /*}*/
 
-#else  /*}{ generic */
+#else  /*}{ generic: non-MIPS */
 
 void *brk(void *);
 int close(int);
