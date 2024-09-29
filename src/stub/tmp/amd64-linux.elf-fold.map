@@ -6,67 +6,65 @@ Name             Origin             Length             Attributes
 
 Linker script and memory map
 
-                0x00000000001000bc                . = ((0x100000 + SIZEOF_HEADERS) + 0xc)
+                0x00000000000000b0                . = SIZEOF_HEADERS
 
-.text           0x00000000001000bc      0x9c0
- *(.text)
- .text          0x00000000001000bc      0x206 tmp/amd64-linux.elf-fold.o
-                0x00000000001000ca                get_page_mask
-                0x00000000001002b0                munmap
-                0x0000000000100277                mmap
-                0x00000000001002b8                write
-                0x00000000001002bc                read
-                0x00000000001002c0                my_bkpt
-                0x000000000010028e                Pprotect
-                0x00000000001000e1                f_unf
-                0x00000000001002a0                exit
-                0x00000000001002a4                brk
-                0x00000000001002ac                open
-                0x00000000001002b4                mprotect
-                0x00000000001002a8                close
- *fill*         0x00000000001002c2        0x2 00
- .text          0x00000000001002c4      0x7b7 tmp/amd64-linux.elf-main.o
-                0x0000000000100934                upx_main
- *fill*         0x0000000000100a7b        0x1 00
- .text          0x0000000000100a7c        0x0 tmp/amd64-expand.o
- *(.data)
- .data          0x0000000000100a7c        0x0 tmp/amd64-linux.elf-fold.o
- .data          0x0000000000100a7c        0x0 tmp/amd64-linux.elf-main.o
- .data          0x0000000000100a7c        0x0 tmp/amd64-expand.o
-                0x0000000000100a7c                . = ALIGN (0x1)
-                0x0000000000100a7c                __start_EXP_HEAD = .
+.text           0x00000000000000b0      0x9c0
+ .text          0x00000000000000b0      0x206 tmp/amd64-linux.elf-fold.o
+                0x00000000000000be                get_page_mask
+                0x00000000000002a4                munmap
+                0x000000000000026b                mmap
+                0x00000000000002ac                write
+                0x00000000000002b0                read
+                0x00000000000002b4                my_bkpt
+                0x0000000000000282                Pprotect
+                0x00000000000000d5                f_unf
+                0x0000000000000294                exit
+                0x0000000000000298                brk
+                0x00000000000002a0                open
+                0x00000000000002a8                mprotect
+                0x000000000000029c                close
+ *fill*         0x00000000000002b6        0x2 00
+ .text          0x00000000000002b8      0x7b7 tmp/amd64-linux.elf-main.o
+                0x0000000000000928                upx_main
+ *fill*         0x0000000000000a6f        0x1 00
+ .text          0x0000000000000a70        0x0 tmp/amd64-expand.o
+                0x0000000000000a70                . = ALIGN (0x1)
+                0x0000000000000a70                __start_EXP_HEAD = .
 
-EXP_HEAD        0x0000000000100a7c       0xe0
- EXP_HEAD       0x0000000000100a7c       0xe0 tmp/amd64-expand.o
-                0x0000000000100a7c                f_expand
-                0x0000000000100b5c                __stop_EXP_HEAD = .
-                0x0000000000100b5c                . = ALIGN (0x1)
-                0x0000000000100b5c                __start_NRV2E = .
+EXP_HEAD        0x0000000000000a70       0xe4
+ EXP_HEAD       0x0000000000000a70       0xe4 tmp/amd64-expand.o
+                0x0000000000000a70                f_expand
+                0x0000000000000b54                __stop_EXP_HEAD = .
+                0x0000000000000b54                . = ALIGN (0x1)
+                0x0000000000000b54                __start_NRV2E = .
 
-NRV2E           0x0000000000100b5c       0xe5
- NRV2E          0x0000000000100b5c       0xe5 tmp/amd64-expand.o
-                0x0000000000100c41                __stop_NRV2E = .
-                0x0000000000100c41                . = ALIGN (0x1)
-                0x0000000000100c41                __start_NRV2D = .
+NRV2E           0x0000000000000b54       0xec
+ NRV2E          0x0000000000000b54       0xec tmp/amd64-expand.o
+                0x0000000000000c40                __stop_NRV2E = .
+                0x0000000000000c40                . = ALIGN (0x1)
+                0x0000000000000c40                __start_NRV2D = .
 
-NRV2D           0x0000000000100c41       0xd7
- NRV2D          0x0000000000100c41       0xd7 tmp/amd64-expand.o
-                0x0000000000100d18                __stop_NRV2D = .
-                0x0000000000100d18                . = ALIGN (0x1)
-                0x0000000000100d18                __start_NRV2B = .
+NRV2D           0x0000000000000c40       0xdf
+ NRV2D          0x0000000000000c40       0xdf tmp/amd64-expand.o
+                0x0000000000000d1f                __stop_NRV2D = .
+                0x0000000000000d1f                . = ALIGN (0x1)
+                0x0000000000000d1f                __start_NRV2B = .
 
-NRV2B           0x0000000000100d18       0xc1
- NRV2B          0x0000000000100d18       0xc1 tmp/amd64-expand.o
-                0x0000000000100dd9                __stop_NRV2B = .
+NRV2B           0x0000000000000d1f       0xc8
+ NRV2B          0x0000000000000d1f       0xc8 tmp/amd64-expand.o
+                0x0000000000000de7                __stop_NRV2B = .
 
-.data
+.data           0x0000000000000de8        0x0
+ .data          0x0000000000000de8        0x0 tmp/amd64-linux.elf-fold.o
+ .data          0x0000000000000de8        0x0 tmp/amd64-linux.elf-main.o
+ .data          0x0000000000000de8        0x0 tmp/amd64-expand.o
 
-.bss            0x0000000000100ddc        0x0
- .bss           0x0000000000100ddc        0x0 tmp/amd64-linux.elf-fold.o
- .bss           0x0000000000100ddc        0x0 tmp/amd64-linux.elf-main.o
- .bss           0x0000000000100ddc        0x0 tmp/amd64-expand.o
+.bss            0x0000000000000de8        0x0
+ .bss           0x0000000000000de8        0x0 tmp/amd64-linux.elf-fold.o
+ .bss           0x0000000000000de8        0x0 tmp/amd64-linux.elf-main.o
+ .bss           0x0000000000000de8        0x0 tmp/amd64-expand.o
 
-.rela.dyn       0x0000000000100de0        0x0
+.rela.dyn       0x0000000000000de8        0x0
  .rela.text     0x0000000000000000        0x0 tmp/amd64-linux.elf-fold.o
 LOAD tmp/amd64-linux.elf-fold.o
 LOAD tmp/amd64-linux.elf-main.o

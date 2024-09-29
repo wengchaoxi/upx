@@ -31,6 +31,7 @@
 ;
 */
 
+#include "arch/amd64/macros.S"
 #include "arch/amd64/regs.h"
 NBPW= 8
 
@@ -55,7 +56,7 @@ NBPW= 8
 #define GETBITp \
         addl bits,bits; jnz 0f; \
         movl (%rsi),bits; sub $-4,%rsi; \
-        adcl bits,bits; movb (%rsi),%dl; \
+        adcl bits,bits; getdl (%rsi); \
 0:
 /* Same, but without prefetch (not useful for length of match.) */
 #define jnextb0n jnextb0y
@@ -142,7 +143,7 @@ decompress:  // (fx_src= &b_info, fx_dst= dst, fx_dstlen= &dstlen)
 refill:
         movl (%rsi),bits; sub $-4,%rsi  // next 32 bits; set Carry
         adcl bits,bits  // LSB= 1 (CarryIn); CarryOut= next bit
-        movb (%rsi),%dl  // speculate: literal, or bottom 8 bits of offset
+        getdl (%rsi)  // speculate: literal, or bottom 8 bits of offset
         rep; ret
 getbit:
         addl bits,bits; jz refill  // Carry= next bit
@@ -150,16 +151,16 @@ getbit:
 
 copy:  // In: len, %rdi, dispq;  Out: 0==len, %rdi, dispq;  trashes %rax, %rdx
         lea (%rdi,dispq),%rax; cmpl $5,len  // <=3 is forced
-        movb (%rax),%dl; jbe copy1  // <=5 for better branch predict
+        getdl (%rax); jbe copy1  // <=5 for better branch predict
         cmpl $-4,displ;   ja  copy1  // 4-byte chunks would overlap
         subl $4,len  // adjust for termination cases
 copy4:
         movl (%rax),%edx; add $4,      %rax; subl $4,len
         movl %edx,(%rdi); lea  4(%rdi),%rdi; jnc copy4
-        addl $4,len; movb (%rax),%dl; jz copy0
+        addl $4,len; getdl (%rax); jz copy0
 copy1:
         inc %rax; movb %dl,(%rdi); dec len
-            movb (%rax),%dl
+            getdl (%rax)
                 lea 1(%rdi),%rdi;  jnz copy1
 copy0:
         rep; ret

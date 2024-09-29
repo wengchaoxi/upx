@@ -28,6 +28,7 @@
    John F. Reiser
    <jreiser@users.sourceforge.net>
 */
+#include "macros.S"
 
 #ifndef NO_METHOD_CHECK
         cmpb $ M_NRV2D_LE32,methb; jne not_n2d
@@ -38,7 +39,7 @@ lit_n2d:
         incq %rsi; movb %dl,(%rdi)
         incq %rdi
 top_n2d:
-        movb (%rsi),%dl  // speculate: literal, or bottom 8 bits of offset
+        getdl (%rsi)  // speculate: literal, or bottom 8 bits of offset
         jnextb1yp lit_n2d
         lea 1(lenq),off  // [len= 0] off= 1
         jmp getoff_n2d

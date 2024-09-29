@@ -25,6 +25,7 @@
 */
 
 //#include "regs.h"
+    .att_syntax
 
 i386bxx:  # (*f_unf)(xo->buf, out_len, h.b_cto8, h.b_ftid);
         mov 4*NBPW(%esp),%eax  # ftid
@@ -66,7 +67,12 @@ ckmark:
         push %esi; lodsl  # (assume) marked, bswapped 32-bit displacement
         subb %dl,%al; jne ckloop3  # not marked with cto8
         pop %edi
-        bswap %eax  # (0<<24) | d24
+
+        // .byte 0x0f,0xc8+0  // bswap eax  # (0<<24) | d24  (NEEDS 486)
+        xchg %al,%ah
+        rol $16,%eax
+        xchg %al,%ah
+
         subl %edi,%eax  # hardware: %esi;  software: %edi  [ 4==delta ]
         addl %ebx,%eax
         stosl

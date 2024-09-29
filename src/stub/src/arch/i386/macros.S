@@ -26,6 +26,8 @@
 ;  <markus@oberhumer.com>               <ezerotven+github@gmail.com>
 ;
 */
+#ifndef __i386_macros__
+#define __i386_macros__
 
 #undef amd64
 #undef i386
@@ -41,6 +43,14 @@
 .macro          section name
                 .section \name
                 .code32
+.endm
+
+.macro  getdl src
+#ifdef WINDOWS_BACK
+        movb \src,%dl
+#else
+        movzbl \src,%edx
+#endif
 .endm
 
 .macro          CPU     id
@@ -717,4 +727,5 @@ section LXUNF035
         ret
 .endm
 
+#endif
 // vi:ts=8:et:nowrap

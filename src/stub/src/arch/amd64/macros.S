@@ -26,6 +26,9 @@
 ;  <markus@oberhumer.com>               <ezerotven+github@gmail.com>
 ;
 */
+#ifndef __amd64_macros__
+#define __amd64_macros__ 1
+
 
 #undef amd64
 #undef i386
@@ -41,4 +44,13 @@
                 .code64
 .endm
 
+.macro  getdl src
+#ifdef WINDOWS_BACK
+        movb \src,%dl
+#else
+        movzbl \src,%edx
+#endif
+.endm
+
+#endif
 // vi:ts=8:et:nowrap

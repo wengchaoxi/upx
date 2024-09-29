@@ -33,39 +33,11 @@
 
 NBPW= 4
 
-//#include "arch/i386/macros.S"
+#include "arch/i386/macros.S"
         .altmacro
         .att_syntax
         .code32
-.macro          section name
-                .section \name
-                .code32
-.endm
 
-// 2-byte bramches, even when destination is not known yet
-.macro          jmps    target
-                .byte   0xeb, \target - . - 1
-.endm
-
-.macro          jzs     target
-                .byte   0x74, \target - . - 1
-.endm
-
-.macro          jnzs    target
-                .byte   0x75, \target - . - 1
-.endm
-
-.macro          jcs     target
-                .byte   0x72, \target - . - 1
-.endm
-
-.macro          jncs    target
-                .byte   0x73, \target - . - 1
-.endm
-
-.macro          jnas    target
-                .byte   0x76, \target - . - 1
-.endm
 #define         jbes    jnas
 
 mlc_cmd = 0
@@ -201,7 +173,7 @@ M_NRV2E_LE32=8
 #define GETBITp \
         addl bits,bits; jnz 0f; \
         movl (%esi),bits; subl $-4,%esi; \
-        adcl bits,bits; movb (%esi),%dl; \
+        adcl bits,bits; getdl (%esi); \
 0:
 /* Same, but without prefetch (not useful for length of match.) */
 #define jnextb0n jnextb0y
@@ -225,21 +197,21 @@ getbit:
 refill:
         movl (%esi),bits; subl $-4,%esi  // next 32 bits; set Carry
         adcl bits,bits  // LSB= 1 (CarryIn); CarryOut= next bit
-        movb (%esi),%dl  // speculate: literal, or bottom 8 bits of offset
+        getdl (%esi)  // speculate: literal, or bottom 8 bits of offset
         rep; ret
 
 copy:  // In: len, %edi, disp;  Out: 0==len, %edi, disp;  trashes %eax, %edx
         leal (%edi,disp),%eax; cmpl $5,len  // <=3 is forced
-        movb (%eax),%dl; jbe copy1  // <=5 for better branch predict
+        getdl (%eax); jbe copy1  // <=5 for better branch predict
         cmpl $-4,disp;   ja  copy1  // 4-byte chunks would overlap
         subl $4,len  // adjust for termination cases
 copy4:
         movl (%eax),%edx; addl $4,      %eax; subl $4,len
         movl %edx,(%edi); leal  4(%edi),%edi; jnc copy4
-        addl $4,len; movb (%eax),%dl; jz copy0
+        addl $4,len; getdl (%eax); jz copy0
 copy1:
         incl %eax; movb %dl,(%edi); decl len
-            movb (%eax),%dl
+            getdl (%eax)
                 leal 1(%edi),%edi;  jnz copy1
 copy0:
         rep; ret

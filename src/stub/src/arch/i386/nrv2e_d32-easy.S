@@ -28,6 +28,7 @@
    John F. Reiser
    <jreiser@users.sourceforge.net>
 */
+#include "macros.S"
 
 #ifndef NO_METHOD_CHECK
         cmpb $ M_NRV2E_LE32,methb; jne not_n2e
@@ -38,7 +39,7 @@ lit_n2e:
         incl %esi; movb %dl,(%edi)
         incl %edi
 top_n2e:
-        movb (%esi),%dl  # speculate: literal, or bottom 8 bits of offset
+        getdl (%esi)  # speculate: literal, or bottom 8 bits of offset
         jnextb1yp lit_n2e
         push $1; pop off
         jmp getoff_n2e
