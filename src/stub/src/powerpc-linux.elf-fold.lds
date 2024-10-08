@@ -30,7 +30,7 @@
 
 OUTPUT_FORMAT("elf32-powerpc", "elf32-powerpc", "elf32-powerpc")
 OUTPUT_ARCH(powerpc:common)
-/*ENTRY(_start)*/
+
 PHDRS
 {
     text PT_LOAD FILEHDR PHDRS ;
@@ -38,7 +38,7 @@ PHDRS
 }
 SECTIONS
 {
-  . = 0x00100000 + SIZEOF_HEADERS + 12;  /* 12==sizeof(l_info) */
+  . = SIZEOF_HEADERS;
   .text : {
     *(.text)
     *(.data)

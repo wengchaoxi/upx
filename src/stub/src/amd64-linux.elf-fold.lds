@@ -33,5 +33,5 @@ OUTPUT_ARCH(i386:x86-64)
 
 SECTIONS
 {
-  . = SIZEOF_HEADERS; /* + 12;  /* 12==sizeof(l_info) */
+  . = SIZEOF_HEADERS;
 }

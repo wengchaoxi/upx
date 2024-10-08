@@ -30,7 +30,7 @@
 
 OUTPUT_FORMAT("elf64-littleaarch64", "elf64-bigaarch64", "elf64-littleaarch64")
 OUTPUT_ARCH(aarch64)
-/*ENTRY(_start)*/
+
 PHDRS
 {
     text PT_LOAD FILEHDR PHDRS FLAGS ( 5 ) ;  /* r-x (no -w-) */
@@ -38,7 +38,7 @@ PHDRS
 }
 SECTIONS
 {
-  . = 0x00100000 + SIZEOF_HEADERS + 12;  /* 12==sizeof(l_info) */
+  . = SIZEOF_HEADERS;
   .text : {
     *(.text)
     *(.data)

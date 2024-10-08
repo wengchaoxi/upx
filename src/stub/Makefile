@@ -313,6 +313,36 @@ define tc.default.f-embed_objinfo_without_xstrip
 	cat $1.dump >> $1
 endef
 
+define tc.default.f-embed_objinfo_without_xstrip_keep_dot_text
+	chmod a-x $1
+	$(call tc,objcopy)          -R .data -R .bss $1
+	$(call tc,objcopy) -R .comment -R .note -R .note.GNU-stack -R .reginfo $1
+	$(call tc,objcopy) --strip-unneeded --keep-symbol=_start --keep-symbol=upx_so_main $1
+#
+# Disassemble for human readability
+# objdump
+#   -Dr disassemble-all, with interspersed relocations
+	$(call tc,objdump) -Dr $(tc_objdump_disasm_options) $1 | $(RTRIM) > $1.disasm
+#
+# Disassemble for post-processing by buildLinuxLoader()
+# objdump
+#   -r  reloc
+#   -h  section-headers
+#   -t  syms
+#   -w  (wide) do not truncate symbol names
+# sed
+#   remove filename from first line
+#   change tab to space
+#   collapse multiple leading zeroes
+#   remove everything after "CONTENTS"
+	$(call tc,objdump) -htr -w $1 | $(BLSQUEEZE) | sed \
+	  -e '1s/^.*: *file format/file format/' \
+	  -e 's/$(tab)/ /g' \
+	  -e 's/ 00*/ 0/g' \
+	  -e 's/CONTENTS.*/CONTENTS/' \
+	  > $1.dump
+	cat $1.dump >> $1
+endef
 tc.default.f-objstrip-disasm.bin = @true
 tc.default.f-objstrip-disasm.o   = $(call tc,objdump) -dr $(tc_objdump_disasm_options) $1 | $(RTRIM) > $1.disasm
 tc.default.f-objstrip-disasm.obj = $(call tc,objdump) -dr $(tc_objdump_disasm_options) $1 | $(RTRIM) > $1.disasm
@@ -395,12 +425,10 @@ amd64-linux.elf-so_entry.h: $(srcdir)/src/$$T.S
 	$(call tc,f-embed_objinfo,tmp/$T.bin)
 	$(call tc,bin2h) tmp/$T.bin $@
 
-amd64-linux.elf-fold.h : tmp/$$T.o tmp/amd64-linux.elf-main.o $(srcdir)/src/$$T.lds tmp/amd64-expand.o
+amd64-linux.elf-fold.h : tmp/$$T.o tmp/amd64-linux.elf-main.o
 #	# FIXME: multiarch-ld-2.18 creates a huge file here, so use 2.17
 #	####$(call tc,ld) --strip-all -T $(srcdir)/src/$T.lds -Map tmp/$T.map $(filter %.o,$^) -o tmp/$T.bin
 	multiarch-ld-2.17 --strip-all -T $(srcdir)/src/$T.lds -Map tmp/$T.map $(filter %.o,$^) -o tmp/$T.bin
-	$(call tc,f-objstrip,tmp/$T.bin)
-	$(call tc,sstrip) tmp/$T.bin
 	$(call tc,bin2h) tmp/$T.bin $@
 
 amd64-linux.elf-so_fold.h : tmp/$$T.o tmp/amd64-linux.elf-so_main.o $(srcdir)/src/$$T.lds tmp/amd64-expand.o
@@ -470,7 +498,7 @@ amd64-win64.pe.h : tc_list = amd64-win64.pe default
 amd64-win64.pe.h : tc_bfdname = elf64-x86-64
 amd64-win64.pe.h : tc_objdump_disasm_options = -M intel-mnemonic
 
-tc.amd64-win64.pe.gcc  = amd64-linux-gcc-4.1.1 -m64 -nostdinc -MMD -MT $@
+tc.amd64-win64.pe.gcc  = amd64-linux-gcc-4.1.1 -m64 -nostdinc -DWINDOWS_BACK=1 -MMD -MT $@
 tc.amd64-win64.pe.gcc += -fno-exceptions -fno-asynchronous-unwind-tables
 tc.amd64-win64.pe.gcc += -Wall -W -Wcast-align -Wcast-qual -Wstrict-prototypes -Wwrite-strings -Werror
 tc.amd64-win64.pe.objdump = multiarch-objdump-2.23.90
@@ -748,7 +776,7 @@ tc.arm64-win64.pe.objcopy  = arm64-linux-objcopy-2.25 -F elf64-littleaarch64
 tc.arm64-win64.pe.objdump  = arm64-linux-objdump-2.25
 
 arm64-win64.pe.h : $(srcdir)/src/$$T.S
-	$(call tc,gcc) -c -x assembler-with-cpp $< -o tmp/$T.bin
+	$(call tc,gcc) -c -x assembler-with-cpp -DWINDOWS_BACK=1 $< -o tmp/$T.bin
 	$(call tc,f-embed_objinfo,tmp/$T.bin)
 	$(call tc,bin2h-c) tmp/$T.bin $@
 
@@ -1310,7 +1338,7 @@ i386-win32.pe.h : tc_list = arch-i386 default
 i386-win32.pe.h : tc_bfdname = elf32-i386
 
 i386-win32.pe.h : $(srcdir)/src/$$T.S
-	$(call tc,gcc) -c -x assembler-with-cpp $< -o tmp/$T.bin
+	$(call tc,gcc) -c -x assembler-with-cpp -DWINDOWS_BACK=1 $< -o tmp/$T.bin
 	$(call tc,f-embed_objinfo,tmp/$T.bin)
 	$(call tc,bin2h-c) tmp/$T.bin $@
 
@@ -1684,6 +1712,7 @@ powerpc64-linux.elf-entry.h : $(srcdir)/src/$$T.S
 
 powerpc64-linux.elf-fold.h : tmp/$$T.o tmp/powerpc64-linux.elf-main.o $(srcdir)/src/$$T.lds
 	$(call tc,ld) --strip-all -T $(srcdir)/src/$T.lds -Map tmp/$T.map $(filter %.o,$^) -o tmp/$T.bin
+	$(call tc,objcopy) -R .glink -R .eh_frame -R .rela_dyn -R .branch_lt -R .toc -R iplt -R .bss tmp/$T.bin
 	$(call tc,f-objstrip,tmp/$T.bin)
 	$(call tc,sstrip) tmp/$T.bin
 	$(call tc,bin2h) tmp/$T.bin $@

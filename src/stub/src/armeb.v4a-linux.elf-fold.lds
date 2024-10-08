@@ -30,7 +30,7 @@
 
 OUTPUT_FORMAT("elf32-bigarm", "elf32-bigarm", "elf32-bigarm")
 OUTPUT_ARCH(arm)
-/*ENTRY(_start)*/
+
 PHDRS
 {
     text PT_LOAD FILEHDR PHDRS ;
@@ -38,8 +38,7 @@ PHDRS
 }
 SECTIONS
 {
-  /*  0x00004000: below 0x00008000 usual, enough to avoid icache sync */
-  . = 0x00008000 + SIZEOF_HEADERS + 12;  /* 12==sizeof(l_info) */
+  . = SIZEOF_HEADERS;
   .text : {
     *(.text)
     *(.data)
