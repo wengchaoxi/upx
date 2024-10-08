@@ -259,7 +259,7 @@ make_hatch_x86_64(
             hatch = 0;
         }
     }
-    DPRINTF("hatch=%%p\n", hatch);
+    DPRINTF("hatch=%%p\\n", hatch);
     return hatch;
 }
 #elif defined(__powerpc64__)  //}{
@@ -347,7 +347,7 @@ make_hatch_arm64(
             hatch = 0;
         }
     }
-    DPRINTF("hatch=%%p\n", hatch);
+    DPRINTF("hatch=%%p\\n", hatch);
     return hatch;
 }
 #undef NBPI

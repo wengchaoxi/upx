@@ -29,9 +29,8 @@
 *  <jreiser@users.sourceforge.net>
 */
 
-//#include "arch/amd64/macros.S"
-//#include "arch/amd64/regs.h"
-#define section .section
+#include "arch/i386/macros.S"
+        .att_syntax
 
 NBPW= 4
 
@@ -78,6 +77,7 @@ M_NRV2E_LE32=8
 //  .long offset({l_info; p_info; b_info; compressed data})
   section ELFMAINX
 _start:  // C-called: %esp: ret_addr,argc,argv,envp; must save %ebx,%esi,%edi,%ebp
+    endbr32  // dl_init.c: call_init: call *%eax
     nop  //  int3  // DEBUG i386 so_entry.S
     pusha  // MATCH_03
     call L70  // MATCH_08  push $&getbit
@@ -89,7 +89,7 @@ L70ret:
 #define len  %ecx  /* XXX: 2GB */
 #define disp %ebp
 
-#define GETBIT call *%edx
+#define GETBIT notrack; call *%edx
 #define jnextb0 GETBIT; jnc
 #define jnextb1 GETBIT; jc
 

@@ -39,6 +39,14 @@
                 //.altmacro       // not supported by x86_64-linux-as-2.15
                 .code64
 
+.macro endbr64
+        .byte 0xf3,0x0f,0x1e,0xfa
+.endm
+
+.macro notrack
+        .byte 0x3e
+.endm
+
 .macro          section name
                 .section \name
                 .code64

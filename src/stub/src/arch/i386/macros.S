@@ -40,6 +40,14 @@
                 .arch   i386, jumps
                 .code32
 
+.macro endbr32
+        .byte 0xf3,0x0f,0x1e,0xfb
+.endm
+
+.macro notrack
+        .byte 0x3e
+.endm
+
 .macro          section name
                 .section \name
                 .code32

@@ -57,7 +57,8 @@ MAP_ANONYMOUS= 0x20
 __NR_mmap=      9  // 64-bit mode only!  /usr/include/asm/unistd_64.h
 __NR_mprotect= 10
 __NR_munmap=   11
-__NR_memfd_create= 0x13f  // 319
+__NR_memfd_create= 319  // 0x13f
+        MFD_EXEC= 0x10
 
 __NR_write=  1
 __NR_close=  3
@@ -84,7 +85,7 @@ M_NRV2E_LE32=8
 //  .long offset({l_info; p_info; b_info; compressed data})
   section ELFMAINX
 _start:
-    nop  // int3  // DEBUG
+        endbr64  // dl_init.c: call_init: call *%rax
         push %arg3  // MATCH_07  envp (glibc)
         push %arg2  // MATCH_01  argv
         push %arg1  // MATCH_00  argc
@@ -100,7 +101,7 @@ _start:
 #define dispq %rbp
 #define displ %ebp
 
-#define GETBIT call *%rdx
+#define GETBIT notrack; call *%rdx
 #define jnextb0 GETBIT; jnc
 #define jnextb1 GETBIT; jc
 
@@ -203,9 +204,16 @@ eof_n2b:
 
         pop %rbp  // MATCH_45
 
-        push $0; pop %arg2
-        call 0f; .asciz "upx"; 0: pop %arg1
-        push $__NR_memfd_create; call do_sys
+        push $(0<<24)|('x'<<16)|('p'<<8)|('u'<<0)  // "upx" at (%rsp)
+        push %rsp; pop %arg1
+        push $MFD_EXEC; pop %arg2
+mfd_2nd:
+        mov $__NR_memfd_create,%eax; syscall
+        test %eax,%eax; jns mfd_ok
+        test %arg2,%arg2; push $0; pop %arg2; jnz mfd_2nd // try with (, 0)
+        hlt  // memfd_create("upx", MFD_EXEC) and ("upx", 0) both fail
+mfd_ok:
+        pop %rcx  // toss "upx"
 
         push %rax; pop %arg1  // mfd
         push %rsp; pop %arg2  // buffer

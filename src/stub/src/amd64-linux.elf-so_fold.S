@@ -24,6 +24,7 @@ NBPW= 8
 
   section SO_HEAD
 fold:
+    endbr64
     pop %rbx  // MATCH_11  ptr unfolded code
     pop %rbp  // MATCH_10  len unfolded code
     pop %arg1  // MATCH_14  &so_info
