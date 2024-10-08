@@ -7,47 +7,47 @@ Name             Origin             Length             Attributes
 Linker script and memory map
 
 TARGET(elf32-i386)
-                0x0000000000c01080                . = ((0xc01000 + SIZEOF_HEADERS) + 0xc)
+                0x0000000000000074                . = SIZEOF_HEADERS
 
-.text           0x0000000000c01080      0x77c
+.text           0x0000000000000074      0x77c
  *(.text)
- .text          0x0000000000c01080       0xc4 tmp/i386-openbsd.elf-fold.o
- .text          0x0000000000c01144      0x648 tmp/i386-openbsd.elf-main.o
-                0x0000000000c0163e                upx_main
- .text          0x0000000000c0178c       0x6d tmp/i386-bsd.syscall.o
-                0x0000000000c017f5                waitpid
-                0x0000000000c017c9                munmap
-                0x0000000000c017dd                execve
-                0x0000000000c017d5                getpid
-                0x0000000000c017e5                ftruncate
-                0x0000000000c0178c                mmap
-                0x0000000000c017ed                nanosleep
-                0x0000000000c017bd                write
-                0x0000000000c017b9                read
-                0x0000000000c017f1                unlink
-                0x0000000000c017e1                fork
-                0x0000000000c017e9                gettimeofday
-                0x0000000000c017d1                access
-                0x0000000000c017b1                exit
-                0x0000000000c017b0                brk
-                0x0000000000c017c1                open
-                0x0000000000c017cd                mprotect
-                0x0000000000c017d9                fcntl
-                0x0000000000c017c5                close
+ .text          0x0000000000000074       0xc4 tmp/i386-openbsd.elf-fold.o
+ .text          0x0000000000000138      0x648 tmp/i386-openbsd.elf-main.o
+                0x0000000000000632                upx_main
+ .text          0x0000000000000780       0x6d tmp/i386-bsd.syscall.o
+                0x00000000000007e9                waitpid
+                0x00000000000007bd                munmap
+                0x00000000000007d1                execve
+                0x00000000000007c9                getpid
+                0x00000000000007d9                ftruncate
+                0x0000000000000780                mmap
+                0x00000000000007e1                nanosleep
+                0x00000000000007b1                write
+                0x00000000000007ad                read
+                0x00000000000007e5                unlink
+                0x00000000000007d5                fork
+                0x00000000000007dd                gettimeofday
+                0x00000000000007c5                access
+                0x00000000000007a5                exit
+                0x00000000000007a4                brk
+                0x00000000000007b5                open
+                0x00000000000007c1                mprotect
+                0x00000000000007cd                fcntl
+                0x00000000000007b9                close
  *(.data)
- *fill*         0x0000000000c017f9        0x3 00
- .data          0x0000000000c017fc        0x0 tmp/i386-openbsd.elf-fold.o
- .data          0x0000000000c017fc        0x0 tmp/i386-openbsd.elf-main.o
- .data          0x0000000000c017fc        0x0 tmp/i386-bsd.syscall.o
+ *fill*         0x00000000000007ed        0x3 00
+ .data          0x00000000000007f0        0x0 tmp/i386-openbsd.elf-fold.o
+ .data          0x00000000000007f0        0x0 tmp/i386-openbsd.elf-main.o
+ .data          0x00000000000007f0        0x0 tmp/i386-bsd.syscall.o
 
 .data
 
-.bss            0x0000000000c017fc        0x0
- .bss           0x0000000000c017fc        0x0 tmp/i386-openbsd.elf-fold.o
- .bss           0x0000000000c017fc        0x0 tmp/i386-openbsd.elf-main.o
- .bss           0x0000000000c017fc        0x0 tmp/i386-bsd.syscall.o
+.bss            0x00000000000007f0        0x0
+ .bss           0x00000000000007f0        0x0 tmp/i386-openbsd.elf-fold.o
+ .bss           0x00000000000007f0        0x0 tmp/i386-openbsd.elf-main.o
+ .bss           0x00000000000007f0        0x0 tmp/i386-bsd.syscall.o
 
-.rel.dyn        0x0000000000c017fc        0x0
+.rel.dyn        0x00000000000007f0        0x0
  .rel.text      0x0000000000000000        0x0 tmp/i386-openbsd.elf-fold.o
 LOAD tmp/i386-openbsd.elf-fold.o
 LOAD tmp/i386-openbsd.elf-main.o
