@@ -1497,7 +1497,7 @@ PackLinuxElf32::buildLinuxLoader(
         if (this->e_machine==Elf32_Ehdr::EM_ARM)
             method = M_NRV2B_8;  //only ARM v6 and above has unaligned fetch
     } // end shlib
-    else if (0
+    else if (this->e_machine == 9999
 //         ||  this->e_machine==Elf32_Ehdr::EM_386
 //         ||  this->e_machine==Elf32_Ehdr::EM_ARM
 //         ||  this->e_machine==Elf32_Ehdr::EM_PPC
@@ -1575,7 +1575,7 @@ PackLinuxElf32::buildLinuxLoader(
     NO_printf("FOLDEXEC unc=%#x  cpr=%#x\n", sz_unc, sz_cpr);
     linker->addSection("FOLDEXEC", mb_cprLoader, sizeof(b_info) + sz_cpr, 0);
     if (xct_off  // shlib
-       && (0
+       && (this->e_machine == 9999
 //          || this->e_machine==Elf32_Ehdr::EM_386
 //          || this->e_machine==Elf32_Ehdr::EM_ARM
 //          || this->e_machine==Elf32_Ehdr::EM_PPC
@@ -1584,7 +1584,7 @@ PackLinuxElf32::buildLinuxLoader(
     ) { // shlib with ELF2 de-compressor
         addLoader("ELFMAINX,ELFMAINZ,FOLDEXEC,IDENTSTR");
     }
-    else if (0
+    else if (this->e_machine == 9999
 //          || this->e_machine==Elf32_Ehdr::EM_386
 //          || this->e_machine==Elf32_Ehdr::EM_ARM
 //          || this->e_machine==Elf32_Ehdr::EM_PPC
@@ -1661,7 +1661,7 @@ PackLinuxElf64::buildLinuxLoader(
         }
         method = M_NRV2B_LE32;  // requires unaligned fetch
     }
-    else if (0
+    else if (this->e_machine == 9999
 //         ||  this->e_machine==Elf64_Ehdr::EM_X86_64
 //         ||  this->e_machine==Elf64_Ehdr::EM_AARCH64
 //         ||  this->e_machine==Elf64_Ehdr::EM_PPC64
@@ -1756,7 +1756,7 @@ PackLinuxElf64::buildLinuxLoader(
     ) {
         addLoader("ELFMAINX,ELFMAINZ,FOLDEXEC,IDENTSTR");
     } // shlib
-    else if (0
+    else if (this->e_machine == 9999
 //         ||  this->e_machine==Elf64_Ehdr::EM_X86_64
 //         ||  this->e_machine==Elf64_Ehdr::EM_AARCH64
 //         ||  this->e_machine==Elf64_Ehdr::EM_PPC64
