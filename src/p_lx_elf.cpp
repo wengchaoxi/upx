@@ -42,6 +42,7 @@
 #include "p_lx_exc.h"
 #include "p_lx_elf.h"
 #include "ui.h"
+#include "util/crypto.h"
 
 #if defined(__CHERI__) && defined(__CHERI_PURE_CAPABILITY__)
 #  pragma clang diagnostic ignored "-Wcheri-capability-misuse" // TODO later
@@ -1515,7 +1516,11 @@ PackLinuxElf32::buildLinuxLoader(
     h.sz_unc = sz_unc;
     h.sz_cpr = mb_cprLoader.getSize();  // max that upx_compress may use
     {
-        int r = upx_compress(uncLoader, sz_unc, sizeof(h) + cprLoader, &sz_cpr,
+        unsigned char * uncLoader_cpy = (unsigned char *)malloc(h.sz_unc*sizeof(char));
+        memcpy(uncLoader_cpy, uncLoader, h.sz_unc);
+        xor_cipher(uncLoader_cpy, h.sz_unc, "key", 3);
+
+        int r = upx_compress(uncLoader_cpy, sz_unc, sizeof(h) + cprLoader, &sz_cpr,
             nullptr, ph_forced_method(method), 10, nullptr, nullptr );
         h.sz_cpr = sz_cpr;  // actual length used
         if (r != UPX_E_OK || h.sz_cpr >= h.sz_unc)
@@ -1621,7 +1626,11 @@ PackLinuxElf64::buildLinuxLoader(
     h.sz_unc = sz_unc;
     h.sz_cpr = mb_cprLoader.getSize();  // max that upx_compress may use
     {
-        int r = upx_compress(uncLoader, sz_unc, sizeof(h) + cprLoader, &sz_cpr,
+        unsigned char * uncLoader_cpy = (unsigned char *)malloc(h.sz_unc*sizeof(char));
+        memcpy(uncLoader_cpy, uncLoader, h.sz_unc);
+        xor_cipher(uncLoader_cpy, h.sz_unc, "key", 3);
+
+        int r = upx_compress(uncLoader_cpy, sz_unc, sizeof(h) + cprLoader, &sz_cpr,
             nullptr, ph_forced_method(method), 10, nullptr, nullptr );
         h.sz_cpr = sz_cpr;  // actual length used
         if (r != UPX_E_OK || h.sz_cpr >= h.sz_unc)

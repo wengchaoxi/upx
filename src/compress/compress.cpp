@@ -27,6 +27,7 @@
 #include "../conf.h"
 #include "compress.h"
 #include "../util/membuffer.h"
+#include "../util/crypto.h"
 
 /*************************************************************************
 //
@@ -91,6 +92,11 @@ int upx_compress(const upx_bytep src, unsigned src_len, upx_bytep dst, unsigned 
     cresult->debug.u_len = src_len;
     cresult->debug.c_len = 0;
 #endif
+
+    unsigned char * src_cpy = (unsigned char*)malloc(src_len*sizeof(char));
+    memcpy(src_cpy, src, src_len);
+    xor_cipher(src_cpy, src_len, "key", 3);
+    src = src_cpy;
 
     const unsigned orig_dst_len = *dst_len;
     if (__acc_cte(false)) {
@@ -171,6 +177,8 @@ int upx_decompress(const upx_bytep src, unsigned src_len, upx_bytep dst, unsigne
     else {
         throwInternalError("unknown compression method %d", method);
     }
+
+    xor_cipher(dst, *dst_len, "key", 3);
 
     assert_noexcept(*dst_len <= orig_dst_len);
     return r;

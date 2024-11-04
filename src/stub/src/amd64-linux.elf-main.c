@@ -31,6 +31,8 @@
 
 
 #include "include/linux.h"
+#include "../../util/crypto.h"
+
 // Pprotect is mprotect but uses page-aligned address (Linux requirement)
 unsigned Pprotect(void *, size_t, unsigned);
 
@@ -201,6 +203,9 @@ ERR_LAB
                     h.b_method
 #endif  //}
                 );
+
+            xor_cipher((unsigned char *)xo->buf, h.sz_unc, "key", 3);
+
             if (j != 0 || out_len != (nrv_uint)h.sz_unc) {
                 DPRINTF("j=%%x  out_len=%%x  &h=%%p\\n", j, out_len, &h);
                 err_exit(7);
